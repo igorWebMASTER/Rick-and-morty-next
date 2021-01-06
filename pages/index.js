@@ -1,65 +1,135 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import { useState, useEffect } from 'react';
+import styles from '../styles/Home.module.css';
+import Head from 'next/head';
+import Link from 'next/link';
 
-export default function Home() {
+const defaultEndpoint = 'https://rickandmortyapi.com/api/character/';
+
+export async function getServerSideProps() {
+  const res = await fetch(defaultEndpoint);
+
+  const data = await res.json();
+
+  return {
+    props: {
+      data,
+    },
+  };
+}
+
+export default function Home({ data }) {
+  const { info, results: defaultResults = [] } = data;
+
+  const [results, updateResults] = useState(defaultResults);
+
+  const [page, updatePage] = useState({
+    ...info,
+    current: defaultEndpoint,
+  });
+
+  const { current } = page;
+
+  useEffect(() => {
+    if (current === defaultEndpoint) return;
+
+    async function request() {
+      const res = await fetch(current);
+      const nextData = await res.json();
+
+      updatePage({
+        current,
+        ...nextData.info,
+      });
+
+      if (!nextData.info?.prev) {
+        updateResults(nextData.results);
+        return;
+      }
+
+      updateResults((prev) => {
+        return [...prev, ...nextData.results];
+      });
+    }
+
+    request();
+  }, [current]);
+
+  function handleLoadMore() {
+    updatePage((prev) => {
+      return {
+        ...prev,
+        current: page?.next,
+      };
+    });
+  }
+
+  function handleSubmitSearch(e) {
+    e.preventDefault();
+
+    const { currentTarget = {} } = e;
+    const fields = Array.from(currentTarget?.elements);
+    const fieldQuery = fields.find((field) => field.name === 'query');
+
+    const value = fieldQuery.value || 'query';
+
+    const endpoint = `https://rickandmortyapi.co(vfm/api/character/?name=${value}`;
+
+    updatePage({
+      current: endpoint,
+    });
+  }
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>Rick and Morty App</title>
+        <link rel='icon' href='/favicon.ico' />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+      <main>
+        <h1 className={styles.title}>Rick and Morty App</h1>
 
         <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
+          Faça uma busca e encontre seu personagem favorito!
         </p>
 
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
+        <form className={styles.search} onSubmit={handleSubmitSearch}>
+          <input name='query' type='search' />
+          <button>Buscar</button>
+        </form>
 
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
+        <ul className={styles.grid}>
+          {results.map((result) => {
+            const { id, name, image } = result;
 
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
+            return (
+              <li key={id} className={styles.card}>
+                <Link href='/character/[id]' as={`/character/${id}`}>
+                  <a>
+                    <img src={image} alt={`${name} Thumb`} />
+                    <h3>{name}</h3>
+                  </a>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
 
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
+        <p style={{ textAlign: 'center' }}>
+          <button onClick={handleLoadMore}>Carregar mais</button>
+        </p>
       </main>
 
       <footer className={styles.footer}>
         <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          href='https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app'
+          target='_blank'
+          rel='noopener noreferrer'
         >
           Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
+          <img src='/vercel.svg' alt='Vercel Logo' className={styles.logo} />
         </a>
       </footer>
     </div>
-  )
+  );
 }
