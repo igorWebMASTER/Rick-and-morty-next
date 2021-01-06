@@ -1,6 +1,6 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## Rick and Morty Info
 
-## Getting Started
+Aplicação feita com Next utilizando os benefícios do SSR e consumindo API do Progama.
 
 First, run the development server:
 
